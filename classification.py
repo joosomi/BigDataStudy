@@ -96,7 +96,6 @@ print('X_valid', X_valid.shape)
 #############모형학습 및 평가#####################
 #7. 모형학습, 앙상블 
 #로지스틱 회귀
-      
 from sklearn.linear_model import LogisticRegression
 model1 = LogisticRegression()
 model1.fit(X_train, y_train)
@@ -111,10 +110,38 @@ model2.fit(X_train, y_train)
 pred2 = pd.DataFrame(model2.predict_proba(X_valid))
                                            
                                     
-# 두가지 모델을 voting으로 합치기 - 확률로 계산하기 때문에 soft option
+# 두가지 모델을 voting으로 합치기 -> 확률로 계산하기 때문에 soft option
+#결과값은 0~1까지의 확률값으로 나온다. 제출할 때는 1번에 대한 열만 제출해야함.
 from sklearn.ensemble import VotingClassifier 
 model3 = VotingClassifier(estimators=[('logistic', model1),('random', model2)], voting='soft') 
 model3.fit(X_train, y_train)
 pred3= pd.DataFrame(model3.predict_proba(X_valid))  
 
 print(pred3)
+
+#9. 모형 평가
+from sklearn.metrics import roc_auc_score
+print('로지스틱', roc_auc_score(y_valid, pred1.iloc[:,1]))
+print('랜덤 포레스트', roc_auc_score(y_valid, pred2.iloc[:,1]))
+print('Voting', roc_auc_score(y_valid, pred3.iloc[:,1]))
+
+# 로지스틱 0.859400826446281
+# 랜덤 포레스트 0.86301652892562
+# Voting 0.8722107438016528 - 성능이 올라감
+
+#10. 하이퍼 파라미터 튜닝
+from sklearn.model_selection import GridSearchCV
+parameters = {'n_estimators': [50, 100], 'max_depth': [4,6]}
+model5 = RandomForestClassifier()
+clf = GridSearchCV(estimator = model5, param_grid = parameters, cv=3)
+clf.fit(X_train, y_train)
+print('최적의 파라미터', clf.best_params_)
+
+#11. 파일 저장
+result = pd.DataFrame(model3.predict_proba(X_test))
+result = result.iloc[:,1]
+pd.DataFrame({'id': X_test.index, 'result':result}).to_csv('00300.csv', index=False)
+
+#확인
+check = pd.read_csv('00300.csv')
+print(check.head())
