@@ -47,10 +47,6 @@ from sklearn.preprocessing import LabelEncoder
 X_train[label] = X_train[label].apply(LabelEncoder().fit_transform)
 X_test[label] = X_test[label].apply(LabelEncoder().fit_transform)
 
-#다시 X_train과 X_test를 분리하는 과정
-
-X_train = for_labeling.iloc[:ailen(X_trn)]
-X_test = for_labeling.iloc[len(X_train):]
 
 #print(X_train['주구매지점'].value_counts())
 
@@ -80,3 +76,47 @@ X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train['gender']
 
 
 
+#7. 모형학습 = Logistic Regression / Random Forest / Voting 8. 앙상블
+from sklearn.linear_model import LogisticRegression
+model1 = LogisticRegression()
+model1.fit(X_train, y_train)
+pred1 = pd.DataFrame(model1.predict_proba(X_valid))
+
+from sklearn.ensemble import RandomForestClassifier
+model2 = RandomForestClassifier()
+model2.fit(X_train, y_train)
+pred2 = pd.DataFrame(model2.predict_proba(X_valid))
+
+from sklearn.ensemble import VotingClassifier
+model3 = VotingClassifier(estimators=[('logistic', model1), ('random', model2)], voting='soft')
+model3.fit(X_train, y_train)
+pred3 = pd.DataFrame(model3.predict_proba(X_valid))
+
+#9. 모형평가
+from sklearn.metrics import roc_auc_score
+print('로지스틱', roc_auc_score(y_valid, pred1.iloc[:,1]))
+print('랜덤포레스트', roc_auc_score(y_valid, pred2.iloc[:,1]))
+print('보팅', roc_auc_score(y_valid, pred3.iloc[:,1]))
+
+#10. 하이퍼파라미터 튜닝
+from sklearn.model_selection import GridSearchCV
+
+parameters = {'n_estimators':[50,100], 'max_depth':[4,6]}
+model4 = RandomForestClassifier()
+clf = GridSearchCV(estimator= model4, param_grid = parameters, cv=3)
+clf.fit(X_train, y_train)
+print('최적의 파라메터', clf.best_params_)
+
+# clf.fit(X_train, y_train):[50, 100], 'max_depth':[4,6]}
+# model4 = RandomForestClassifier()
+# clf = GridSearchCV(estimator= model4, param_grid=parameters, cv=3)
+# print('최적의 파라메터', clf.best_params_) 
+
+#11. 파일저장
+result = pd.DataFrame(model3.predict_proba(X_test))
+result = result.iloc[:,1]
+pd.DataFrame({'cust_id': X_test['cust_id'], 'result': result}).to_csv('003000000.csv', index=False)
+
+#확인
+check = pd.read_csv('003000000.csv')
+print(check.head())
