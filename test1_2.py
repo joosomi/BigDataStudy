@@ -115,7 +115,7 @@ print('최적의 파라메터', clf.best_params_)
 #11. 파일저장
 result = pd.DataFrame(model3.predict_proba(X_test))
 result = result.iloc[:,1]
-pd.DataFrame({'cust_id': X_test['cust_id'], 'result': result}).to_csv('003000000.csv', index=False)
+pd.DataFrame({'custid': X_test['cust_id'], 'gender': result}).to_csv('003000000.csv', index=False)
 
 #확인
 check = pd.read_csv('003000000.csv')
